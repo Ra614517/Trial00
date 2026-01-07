@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KHANG VIP - Secure Free Trial</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #f72585; --secondary: #4cc9f0; --dark: #0f0f1a; }
+        body { background: var(--dark); color: white; font-family: 'Poppins', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: rgba(255, 255, 255, 0.03); padding: 40px; border-radius: 25px; text-align: center; border: 1px solid rgba(247, 37, 133, 0.3); width: 350px; backdrop-filter: blur(15px); }
+        .logo { font-size: 32px; font-weight: 800; margin-bottom: 5px; }
+        .logo b { color: var(--primary); } .logo span { color: var(--secondary); }
+        .btn-gen { background: linear-gradient(45deg, var(--primary), #b5179e); color: white; border: none; padding: 15px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        #key-box { margin-top: 25px; display: none; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px; border: 1px dashed var(--secondary); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="logo"><b>KHANG</b> <span>VIP</span></div>
+    <p style="color: #888; font-size: 12px;">ANTI-SHARE TRIAL SYSTEM</p>
+    <i class="fas fa-bolt" style="font-size: 50px; color: #f1c40f; margin: 15px 0;"></i>
+    <button id="genBtn" onclick="generateTrial()" class="btn-gen">GENERATE FREE TRIAL</button>
+    <div id="key-box">
+        <p id="userD" style="color: var(--secondary); font-weight: bold; font-size: 20px; margin: 5px 0;"></p>
+        <p id="passD" style="color: #fff; font-weight: bold; font-size: 18px; margin: 5px 0;"></p>
+    </div>
+</div>
+
+<script type="module">
+    // --- यहाँ तिम्रो FIREBASE विवरण हाल ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    // आफ्नो Firebase Console बाट पाएको विवरण यहाँ फेर:
+    const firebaseConfig = {
+        apiKey: "यता_तिम्रो_API_KEY",
+        databaseURL: "यता_तिम्रो_DATABASE_URL",
+        projectId: "यता_ID",
+        appId: "यता_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // DEVICE LOCK LOGIC
+    const getFingerprint = () => btoa(navigator.userAgent + screen.width).substring(0, 16);
+
+    window.generateTrial = async () => {
+        const btn = document.getElementById('genBtn');
+        const userFingerprint = getFingerprint();
+        const currentTime = new Date().getTime();
+        const cooldown = 2 * 60 * 60 * 1000;
+
+        if (localStorage.getItem('khang_lock') && (currentTime - localStorage.getItem('khang_lock') < cooldown)) {
+            return Swal.fire("Access Denied", "यो डिभाइसमा ट्रायल निकालिसकिएको छ!", "warning");
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+
+        try {
+            const user = "TRIAL-" + Math.floor(1000 + Math.random() * 9000);
+            const pass = Math.floor(100 + Math.random() * 899).toString();
+            
+            // Validity 2 Hours
+            let exp = new Date(); exp.setHours(exp.getHours() + 2);
+            const expStr = exp.toLocaleString();
+
+            await set(ref(db, `userinfo/${user}`), {
+                username: user, password: pass, status: "active", validity: expStr, type: "trial"
+            });
+
+            localStorage.setItem('khang_lock', currentTime);
+            document.getElementById('key-box').style.display = "block";
+            document.getElementById('userD').innerText = "User: " + user;
+            document.getElementById('passD').innerText = "Pass: " + pass;
+            
+            navigator.clipboard.writeText(`User: ${user} Pass: ${pass}`);
+            Swal.fire("Success", "Key Copied!", "success");
+            btn.innerText = "GENERATED";
+
+        } catch (e) {
+            Swal.fire("Error", "Check Internet/Firebase!", "error");
+            btn.disabled = false;
+        }
+    };
+</script>
+</body>
+</html>
