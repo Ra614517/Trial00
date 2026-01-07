@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KHANG VIP - Secure Free Trial</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #f72585;
+            --secondary: #4cc9f0;
+            --dark: #0f0f1a;
+        }
+        body { 
+            background: var(--dark); 
+            color: white; 
+            font-family: 'Poppins', sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            overflow: hidden;
+        }
+        .card { 
+            background: rgba(255, 255, 255, 0.03); 
+            padding: 40px; 
+            border-radius: 25px; 
+            text-align: center; 
+            border: 1px solid rgba(247, 37, 133, 0.3); 
+            width: 350px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            backdrop-filter: blur(15px);
+            z-index: 1;
+        }
+        .logo { font-size: 32px; font-weight: 800; margin-bottom: 5px; letter-spacing: 2px; }
+        .logo b { color: var(--primary); }
+        .logo span { color: var(--secondary); }
+
+        .btn-gen { 
+            background: linear-gradient(45deg, var(--primary), #b5179e); 
+            color: white; border: none; padding: 15px; width: 100%; 
+            border-radius: 12px; font-weight: bold; cursor: pointer; 
+            font-size: 16px; transition: 0.3s; margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(247, 37, 133, 0.3);
+        }
+        .btn-gen:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(247, 37, 133, 0.5); }
+        .btn-gen:disabled { background: #333; cursor: not-allowed; box-shadow: none; }
+
+        #key-box { 
+            margin-top: 25px; display: none; background: rgba(0,0,0,0.5); 
+            padding: 20px; border-radius: 15px; border: 1px dashed var(--secondary); 
+            animation: slideUp 0.4s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .tg-links { margin-top: 25px; display: flex; justify-content: center; gap: 20px; }
+        .tg-links a { color: white; text-decoration: none; font-size: 20px; transition: 0.3s; }
+        .tg-links a:hover { color: var(--secondary); transform: scale(1.2); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="logo"><b>KHANG</b> <span>VIP</span></div>
+    <p style="color: #888; font-size: 12px; margin-bottom: 20px;">TRIAL KEY GENERATOR</p>
+    
+    <i class="fas fa-shield-alt" style="font-size: 50px; color: var(--secondary); margin-bottom: 15px;"></i>
+    
+    <button id="genBtn" onclick="generateTrial()" class="btn-gen">GENERATE FREE TRIAL</button>
+
+    <div id="key-box">
+        <p style="margin:0; font-size: 12px; color: #aaa;">User & Pass copied!</p>
+        <p id="userD" style="color: var(--secondary); font-weight: bold; font-size: 20px; margin: 5px 0;"></p>
+        <p id="passD" style="color: #fff; font-weight: bold; font-size: 18px; margin: 5px 0;"></p>
+    </div>
+
+    <div class="tg-links">
+        <a href="https://t.me/+9PopZ5hrEgE1YzQ1" title="Group"><i class="fab fa-telegram"></i></a>
+        <a href="https://t.me/Khangvip05" title="Owner"><i class="fas fa-user-shield"></i></a>
+    </div>
+</div>
+
+<script type="module">
+    import { db } from "./firebase-config.js";
+    import { ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    // Device Identification
+    const getFingerprint = () => {
+        return btoa(navigator.userAgent + screen.width + screen.height).substring(0, 16);
+    };
+
+    // Maintenance Sync from Dashboard
+    onValue(ref(db, 'settings/public_gen'), (snap) => {
+        const btn = document.getElementById('genBtn');
+        if(snap.val() === "off") {
+            btn.innerText = "OFFLINE"; btn.disabled = true;
+        } else {
+            btn.innerText = "GENERATE FREE TRIAL"; btn.disabled = false;
+        }
+    });
+
+    window.generateTrial = async () => {
+        const btn = document.getElementById('genBtn');
+        const userFingerprint = getFingerprint();
+        const currentTime = new Date().getTime();
+        const cooldown = 2 * 60 * 60 * 1000; // 2 Hours
+
+        // 1. Local Storage Check
+        const lastTime = localStorage.getItem('khang_last_gen');
+        if (lastTime && (currentTime - lastTime < cooldown)) {
+            const rem = Math.ceil((cooldown - (currentTime - lastTime)) / (60 * 1000));
+            return Swal.fire("Wait!", `Naya key ko lagi ${rem} min parkha.`, "warning");
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Verifying Device...";
+
+        try {
+            // 2. Database Fingerprint Check (Anti-Share)
+            const fingerRef = ref(db, `generated_ips/${userFingerprint}`);
+            const fingerSnap = await get(fingerRef);
+
+            if (fingerSnap.exists()) {
+                const diff = currentTime - fingerSnap.val().time;
+                if (diff < cooldown) {
+                    const rem = Math.ceil((cooldown - diff) / (60 * 1000));
+                    btn.disabled = false;
+                    btn.innerText = "GENERATE FREE TRIAL";
+                    return Swal.fire("Security Alert", `Yo device bata trial nikali sakyo. ${rem} min wait gara.`, "error");
+                }
+            }
+
+            // 3. Generate Key
+            const user = "TRIAL-" + Math.floor(1000 + Math.random() * 9000);
+            const pass = Math.floor(100 + Math.random() * 899).toString();
+            
+            let exp = new Date();
+            exp.setHours(exp.getHours() + 2);
+            const expStr = `${String(exp.getDate()).padStart(2,'0')}-${String(exp.getMonth()+1).padStart(2,'0')}-${exp.getFullYear()} ${String(exp.getHours()).padStart(2,'0')}:${String(exp.getMinutes()).padStart(2,'0')}`;
+
+            const trialData = {
+                username: user, password: pass, device: "null", status: "active",
+                validity: expStr, type: "trial", rgtime: new Date().toLocaleString()
+            };
+
+            // 4. Save to Firebase
+            await set(ref(db, `userinfo/${user}`), trialData);
+            await set(ref(db, `trial_users/${user}`), trialData);
+            await set(ref(db, `generated_ips/${userFingerprint}`), { time: currentTime });
+
+            // 5. Success UI
+            localStorage.setItem('khang_last_gen', currentTime);
+            document.getElementById('key-box').style.display = "block";
+            document.getElementById('userD').innerText = user;
+            document.getElementById('passD').innerText = pass;
+
+            const copyStr = `KHANG VIP TRIAL\nUSER: ${user}\nPASS: ${pass}\nTIME: 2 Hours`;
+            await navigator.clipboard.writeText(copyStr);
+
+            Swal.fire({ icon: 'success', title: 'Key Copied!', timer: 2000, showConfirmButton: false });
+            btn.innerText = "GENERATED";
+
+        } catch (e) {
+            console.error(e);
+            Swal.fire("Error", "Server busy, try again!", "error");
+            btn.disabled = false;
+        }
+    };
+</script>
+
+</body>
+</html>
