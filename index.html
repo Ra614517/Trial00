@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DARK ELO | PREMIUM TRIAL</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #000; --accent: #ff0000; --bg: #f5f7fa; --discord: #5865F2; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .card { width: 100%; max-width: 380px; background: #fff; padding: 40px 25px; border-radius: 30px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.06); border: 1px solid #eee; }
+        .welcome { font-size: 12px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+        .brand { font-weight: 800; font-size: 32px; letter-spacing: -1.5px; margin-bottom: 30px; }
+        .brand span { color: var(--accent); }
+        .btn { width: 100%; padding: 16px; border-radius: 18px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.3s; border: none; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px; text-decoration: none; }
+        .btn-gen { background: var(--primary); color: #fff; }
+        .btn-gen:disabled { background: #ddd; color: #999; cursor: not-allowed; }
+        .btn-discord { border: 2px solid var(--discord); color: var(--discord); background: #fff; }
+        .btn-discord:hover { background: var(--discord); color: #fff; }
+        #key-display { display: none; margin-top: 25px; padding: 20px; background: #f9f9f9; border-radius: 20px; border: 2px dashed #ddd; animation: pop 0.4s ease; }
+        @keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .label { font-size: 10px; font-weight: 800; color: #aaa; text-transform: uppercase; margin-bottom: 5px; }
+        .value { font-size: 22px; font-weight: 800; color: #000; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="welcome">Authorized Trial</div>
+    <div class="brand">DARK<span>ELO</span></div>
+    
+    <button id="genBtn" onclick="generateTrial()" class="btn btn-gen" disabled>VERIFYING...</button>
+
+    <a href="https://discord.gg/bczx5sGtdT" target="_blank" class="btn btn-discord">
+        <i class="fab fa-discord"></i> JOIN DISCORD
+    </a>
+
+    <div id="key-display">
+        <div class="label">USERNAME</div>
+        <div id="userD" class="value"></div>
+        <div class="label">PASSWORD</div>
+        <div id="passD" class="value" style="margin-bottom:0;"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyC0VsVrG4T7sEl7nZ4Zd-7OigtKWI3smvA",
+        databaseURL: "https://codkhang-c8cb8-default-rtdb.firebaseio.com",
+        projectId: "codkhang-c8cb8",
+        appId: "1:411020704482:web:861786dd37783eb8d4fcbb"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const auth = urlParams.get('auth');
+    const btn = document.getElementById('genBtn');
+
+    // --- SECURITY: HIDE AUTH FROM URL ---
+    if (auth === 'khangvip') {
+        // Yo line le URL bata ?auth=khangvip hatayera normal link banauchha
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    onValue(ref(db, 'settings/public_gen'), (snap) => {
+        const status = snap.val();
+        if (status === "off") {
+            btn.disabled = true;
+            btn.innerText = "LINK CLOSED";
+        } else {
+            // "khangvip" check garne auth parameter bata
+            if (auth === 'khangvip') {
+                btn.disabled = false;
+                btn.innerText = "GENERATE TRIAL (24H)";
+            } else {
+                btn.innerText = "ACCESS DENIED";
+                btn.disabled = true;
+                Swal.fire({ title: 'ERROR', text: 'Invalid Security Link!', icon: 'error', confirmButtonColor: '#000' });
+            }
+        }
+    });
+
+    window.generateTrial = async () => {
+        btn.disabled = true;
+        btn.innerText = "GENERATING...";
+        try {
+            const user = "DARK-" + Math.floor(1000 + Math.random() * 8999);
+            const pass = Math.floor(100 + Math.random() * 899).toString();
+            let exp = new Date(); 
+            exp.setHours(exp.getHours() + 24); 
+            const expiryTimestamp = exp.getTime();
+
+            const data = { username: user, password: pass, status: "active", validity: expiryTimestamp, type: "trial", device: "null" };
+            await set(ref(db, `userinfo/${user}`), data);
+            await set(ref(db, `trial_users/${user}`), data);
+
+            document.getElementById('key-display').style.display = "block";
+            document.getElementById('userD').innerText = user;
+            document.getElementById('passD').innerText = pass;
+            navigator.clipboard.writeText(`USER: ${user}\nPASS: ${pass}`);
+            Swal.fire({ title: 'SUCCESS', text: 'Copied to clipboard!', icon: 'success', confirmButtonColor: '#000' });
+            btn.innerText = "COMPLETED";
+        } catch (e) {
+            Swal.fire({ title: 'Error', text: 'Failed!', icon: 'error' });
+            btn.disabled = false;
+        }
+    };
+</script>
+</body>
+</html>
