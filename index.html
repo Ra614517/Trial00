@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DARK ELO | PREMIUM PANEL</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #000; --accent: #ff0000; --bg: #f5f7fa; --discord: #5865F2; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background: var(--bg); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 20px;
+            background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+            background-size: 25px 25px;
+        }
+
+        .card { 
+            width: 100%; max-width: 390px; background: #fff; padding: 45px 30px; border-radius: 35px; 
+            text-align: center; box-shadow: 0 25px 55px rgba(0,0,0,0.07); border: 1px solid #e5e7eb; 
+            position: relative; animation: float 5s ease-in-out infinite;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+        .badge-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+        .badge { font-size: 9px; font-weight: 800; padding: 5px 12px; border-radius: 50px; text-transform: uppercase; letter-spacing: 1px; }
+        .online { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+        .secure { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+
+        .welcome { font-size: 13px; color: #94a3b8; font-weight: 600; margin-bottom: 5px; }
+        .brand { font-weight: 800; font-size: 34px; letter-spacing: -1.5px; margin-bottom: 30px; color: var(--primary); }
+        .brand span { color: var(--accent); }
+
+        .btn { width: 100%; padding: 18px; border-radius: 20px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: none; display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px; text-decoration: none; }
+        .btn-gen { background: var(--primary); color: #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        .btn-gen:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
+        .btn-gen:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
+        
+        .btn-discord { background: #fff; color: var(--discord); border: 2.5px solid var(--discord); }
+        .btn-discord:hover { background: var(--discord); color: #fff; }
+
+        #key-box { display: none; margin-top: 30px; padding: 25px; background: #f8fafc; border-radius: 25px; border: 2px dashed #cbd5e0; animation: pop 0.5s ease; }
+        @keyframes pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        
+        .label { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; }
+        .value { font-size: 24px; font-weight: 800; color: #000; margin-bottom: 18px; letter-spacing: 1px; }
+
+        .footer { margin-top: 25px; font-size: 11px; color: #94a3b8; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="badge-row">
+        <span class="badge online"><i class="fas fa-bolt"></i> Server Active</span>
+        <span class="badge secure"><i class="fas fa-shield-alt"></i> Anti-Ban ON</span>
+    </div>
+
+    <div class="welcome">Ready for Action?</div>
+    <div class="brand">DARK<span>ELO</span></div>
+    
+    <button id="genBtn" onclick="generateTrial()" class="btn btn-gen" disabled>
+        <i class="fas fa-circle-notch fa-spin"></i> VERIFYING...
+    </button>
+
+    <a href="https://discord.gg/bczx5sGtdT" target="_blank" class="btn btn-discord">
+        <i class="fab fa-discord"></i> JOIN OUR DISCORD
+    </a>
+
+    <div id="key-box">
+        <div class="label">User ID</div>
+        <div id="userD" class="value"></div>
+        <div class="label">Access Key</div>
+        <div id="passD" class="value" style="margin-bottom:0;"></div>
+    </div>
+
+    <div class="footer">
+        <i class="far fa-calendar-alt"></i> Validity: 24 Hours Trial
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyC0VsVrG4T7sEl7nZ4Zd-7OigtKWI3smvA",
+        databaseURL: "https://codkhang-c8cb8-default-rtdb.firebaseio.com",
+        projectId: "codkhang-c8cb8",
+        appId: "1:411020704482:web:861786dd37783eb8d4fcbb"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const auth = urlParams.get('auth');
+    const btn = document.getElementById('genBtn');
+
+    // --- UNIVERSAL UI LOGIC ---
+    // Dubai link ma UI yahi rahanchha
+    if (auth === 'khangvip') {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    onValue(ref(db, 'settings/public_gen'), (snap) => {
+        const status = snap.val();
+        if (status === "off") {
+            btn.disabled = true;
+            btn.innerText = "ACCESS CLOSED";
+        } else {
+            // "khangvip" auth check
+            if (auth === 'khangvip') {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plus-circle"></i> GENERATE TRIAL';
+            } else {
+                // Auth chhaina bhane UI yahi rahanchha tara button le kaam gardaina
+                btn.innerText = "ACCESS DENIED";
+                btn.disabled = true;
+                Swal.fire({ title: 'AUTH ERROR', text: 'Please use the official link!', icon: 'warning', confirmButtonColor: '#000' });
+            }
+        }
+    });
+
+    window.generateTrial = async () => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GENERATING...';
+        try {
+            const user = "DARK-" + Math.floor(1000 + Math.random() * 8999);
+            const pass = Math.floor(100 + Math.random() * 899).toString();
+            let exp = new Date(); 
+            exp.setHours(exp.getHours() + 24); 
+            const expiryTimestamp = exp.getTime();
+
+            const data = { username: user, password: pass, status: "active", validity: expiryTimestamp, type: "trial", device: "null" };
+            await set(ref(db, `userinfo/${user}`), data);
+            await set(ref(db, `trial_users/${user}`), data);
+
+            document.getElementById('key-box').style.display = "block";
+            document.getElementById('userD').innerText = user;
+            document.getElementById('passD').innerText = pass;
+            navigator.clipboard.writeText(`USER: ${user}\nPASS: ${pass}`);
+            Swal.fire({ title: 'SUCCESS', text: 'Trial Key Copied!', icon: 'success', confirmButtonColor: '#000' });
+            btn.innerHTML = '<i class="fas fa-check"></i> COMPLETED';
+        } catch (e) {
+            Swal.fire({ title: 'Error', text: 'Failed!', icon: 'error' });
+            btn.disabled = false;
+        }
+    };
+</script>
+</body>
+</html>
